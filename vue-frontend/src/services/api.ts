@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Phase, Project, Task, User, TaskComment, LoginRequest } from '@/types';
+import type { Phase, Project, Task, User, TaskComment, LoginRequest, AppNotification,CreateNotificationRequest } from '@/types';
 
 const API_BASE_URL = 'http://localhost:60000/api';
 
@@ -161,6 +161,17 @@ export const commentAPI = {
     api.get<TaskComment[]>(`/comments/recent/all${limit ? `?limit=${limit}` : ''}`),
   deleteCommentsByTask: (taskId: string) => 
     api.delete<{ deletedCount: number; message: string }>(`/comments/task/${taskId}/all`),
+};
+
+// Notification API methods
+export const notificationsAPI = {
+  getNotifications: () => api.get<AppNotification[]>('/notifications'), // CHANGED
+  getUnreadCount: () => api.get<{ count: number }>('/notifications/unread/count'),
+  markAsRead: (notificationIds: string[]) => 
+    api.patch('/notifications/mark-read', { notificationIds }),
+  markAllAsRead: () => api.patch('/notifications/mark-all-read'),
+  createNotification: (notificationData: CreateNotificationRequest) => // FIXED
+    api.post<AppNotification>('/notifications', notificationData), // CHANGED
 };
 
 export default api;

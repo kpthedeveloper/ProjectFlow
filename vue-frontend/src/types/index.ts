@@ -68,3 +68,29 @@ export interface TaskComment {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface AppNotification {
+  id: string;
+  userId: string;
+  type: 'mention' | 'assignment' | 'task_update' | 'phase_update' | 'project_update' | 'general';
+  title: string;
+  message: string;
+  read: boolean;
+  data?: any; // Additional data like taskId, projectId, etc.
+  targetUrl?: string; // ADD THIS LINE
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateNotificationRequest {
+  userId: string;
+  type: AppNotification['type'];
+  title: string;
+  message: string;
+  targetUrl?: string; // ADD THIS LINE
+  data?: any;
+}
+
+export interface MarkAsReadRequest {
+  notificationIds: string[];
+}

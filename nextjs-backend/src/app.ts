@@ -14,6 +14,7 @@ import phaseRoutes from './routes/PhaseRoutes';
 import taskRoutes from './routes/TaskRoutes';
 import commentRoutes from './routes/CommentRoutes';
 import authRoutes from './routes/auth';
+import notificationRoutes from './routes/NotificationRoutes';
 
 const app = express();
 
@@ -51,6 +52,7 @@ app.use('/api/projects', projectRoutes);
 app.use('/api/phases', phaseRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/comments', commentRoutes);
+app.use('/notifications', notificationRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

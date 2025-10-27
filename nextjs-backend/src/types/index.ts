@@ -104,3 +104,29 @@ export interface RefreshTokenResponse {
   accessToken: string;
   refreshToken: string;
 }
+
+export interface Notification {
+  id: string;
+  user_id: string;
+  type: 'mention' | 'assignment' | 'task_update' | 'phase_update' | 'project_update' | 'general';
+  title: string;
+  message: string;
+  read: boolean;
+  data?: any;
+  target_url?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateNotificationRequest {
+  userId: string;
+  type: Notification['type'];
+  title: string;
+  message: string;
+  targetUrl?: string;
+  data?: any;
+}
+
+export interface MarkAsReadRequest {
+  notificationIds: string[];
+}

@@ -28,7 +28,7 @@
               <div v-if="showNotifications" class="notifications-dropdown">
                 <div class="notifications-header">
                   <h3>Notifications</h3>
-                  <button @click="markAllAsRead" class="mark-all-read">
+                  <button @click="handleMarkAllAsRead" class="mark-all-read">
                     Mark all as read
                   </button>
                 </div>
@@ -48,7 +48,7 @@
                     </div>
                     <button 
                       v-if="!notification.read"
-                      @click.stop="markAsRead(notification.id)"
+                      @click.stop="handleMarkAsRead(notification.id)"
                       class="mark-read-btn"
                     >
                       ✓
@@ -72,7 +72,6 @@
     </header>
     <main class="app-main">
       <div class="container">
-        <!-- This is where the page content will be rendered -->
         <slot />
       </div>
     </main>
@@ -80,84 +79,65 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted, onUnmounted } from 'vue';
+import { computed, ref, onMounted, onUnmounted, watch } from 'vue'; // ADDED watch import
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
+import { useNotificationsStore } from '@/stores/notifications';
+import type { AppNotification } from '@/types'; // ADD THIS IMPORT
 
 const authStore = useAuthStore();
+const notificationsStore = useNotificationsStore();
 const router = useRouter();
 
-// Notification state
 const showNotifications = ref(false);
-const notifications = ref<Notification[]>([]);
 
-// Sample notifications data
-const sampleNotifications: Notification[] = [
-  {
-    id: '1',
-    type: 'mention',
-    message: 'John Doe mentioned you in a comment on task "Design Homepage"',
-    read: false,
-    createdAt: new Date(Date.now() - 1000 * 60 * 5),
-    targetUrl: '/tasks/123'
-  },
-  {
-    id: '2',
-    type: 'assignment',
-    message: 'You were assigned to task "Fix Login Bug"',
-    read: false,
-    createdAt: new Date(Date.now() - 1000 * 60 * 30),
-    targetUrl: '/tasks/456'
-  }
-];
-
-interface Notification {
-  id: string;
-  type: 'mention' | 'assignment' | 'update' | 'phase_update' | 'general';
-  message: string;
-  read: boolean;
-  createdAt: Date;
-  targetUrl?: string;
-}
+// Use real notifications from store
+const notifications = computed(() => notificationsStore.notifications);
+const unreadCount = computed(() => notificationsStore.unreadCount);
 
 const user = computed(() => authStore.user);
 const canAccessTasks = computed(() => ['user', 'manager', 'admin'].includes(authStore.user?.role || ''));
 const canManageUsers = computed(() => ['admin'].includes(authStore.user?.role || ''));
 
-// Computed properties for notifications
-const unreadCount = computed(() => 
-  notifications.value.filter(n => !n.read).length
-);
+onMounted(async () => {
+  // Initialize notifications if user is authenticated
+  if (authStore.isAuthenticated) {
+    await notificationsStore.initialize();
+  }
+  
+  document.addEventListener('click', handleClickOutside);
+});
+
+// Watch for authentication changes to load notifications
+watch(() => authStore.isAuthenticated, async (isAuthenticated) => {
+  if (isAuthenticated) {
+    await notificationsStore.initialize();
+  }
+});
 
 // Methods
 const toggleNotifications = () => {
   showNotifications.value = !showNotifications.value;
 };
 
-const markAsRead = (notificationId: string) => {
-  const notification = notifications.value.find(n => n.id === notificationId);
-  if (notification) {
-    notification.read = true;
-  }
+const handleMarkAsRead = async (notificationId: string) => {
+  await notificationsStore.markAsRead([notificationId]);
 };
 
-const markAllAsRead = () => {
-  notifications.value.forEach(notification => {
-    if (!notification.read) {
-      notification.read = true;
-    }
-  });
+const handleMarkAllAsRead = async () => {
+  await notificationsStore.markAllAsRead();
 };
 
-const handleNotificationClick = (notification: Notification) => {
-  markAsRead(notification.id);
+const handleNotificationClick = (notification: AppNotification) => {
+  handleMarkAsRead(notification.id);
   if (notification.targetUrl) {
     router.push(notification.targetUrl);
   }
   showNotifications.value = false;
 };
 
-const formatTime = (date: Date): string => {
+const formatTime = (dateString: string): string => { // CHANGED parameter type
+  const date = new Date(dateString);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffMins = Math.floor(diffMs / 60000);
@@ -193,18 +173,12 @@ const handleClickOutside = (event: MouseEvent) => {
   }
 };
 
-onMounted(() => {
-  notifications.value = sampleNotifications;
-  document.addEventListener('click', handleClickOutside);
-});
-
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside);
 });
 </script>
 
 <style scoped>
-/* Your existing AppLayout styles remain the same */
 .app-layout {
   min-height: 100vh;
   background-color: #f5f5f5;
